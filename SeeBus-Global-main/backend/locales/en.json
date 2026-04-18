@@ -1,0 +1,6 @@
+{
+    "arriving": "Route {route} is arriving at stop {stop}.",
+    "at_stop": "Route {route} is currently at stop {stop}.",
+    "departing": "Route {route} is departing from stop {stop}.",
+    "missed": "Route {route} has passed stop {stop}."
+}
