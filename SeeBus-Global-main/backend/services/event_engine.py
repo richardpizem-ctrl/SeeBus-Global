@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from math import radians, sin, cos, sqrt, atan2
 
-# -----------------------------
-# Pomocná funkcia: vzdialenosť
-# -----------------------------
+# -----------------------------------
+# Výpočet vzdialenosti v metroch
+# -----------------------------------
 def distance_m(lat1, lon1, lat2, lon2):
     R = 6371000  # polomer Zeme v metroch
     dlat = radians(lat2 - lat1)
@@ -14,18 +14,18 @@ def distance_m(lat1, lon1, lat2, lon2):
     return R * c
 
 
-# -----------------------------
-# Stav vozidla
-# -----------------------------
+# -----------------------------------
+# Stav vozidla (pamäť)
+# -----------------------------------
 @dataclass
 class VehicleState:
-    trip_id: str
     last_state: str | None = None
+    last_stop_id: str | None = None
 
 
-# -----------------------------
+# -----------------------------------
 # Event Engine
-# -----------------------------
+# -----------------------------------
 class EventEngine:
 
     def __init__(self, stops, stop_times):
@@ -33,7 +33,7 @@ class EventEngine:
         self.stop_times = stop_times
         self.vehicle_states = {}  # vehicle_id → VehicleState
 
-    def process_vehicle(self, vehicle):
+    def process_vehicle(self, vehicle_id, vehicle):
         """
         vehicle = VehiclePosition(trip_id, lat, lon, speed)
         """
@@ -44,7 +44,7 @@ class EventEngine:
         if not trip_stops:
             return None
 
-        # Najbližšia zastávka
+        # Nájdeme najbližšiu zastávku
         next_stop = None
         min_dist = 999999
 
@@ -61,16 +61,28 @@ class EventEngine:
         if not next_stop:
             return None
 
-        # Logika stavov
+        # Prevod rýchlosti
         speed_kmh = (vehicle.speed or 0) * 3.6
 
+        # Logika stavov
         if 40 < min_dist < 120 and speed_kmh > 3:
-            return "ARRIVING", next_stop
+            state = "ARRIVING"
+        elif min_dist < 15 and speed_kmh < 1:
+            state = "AT_STOP"
+        elif min_dist > 20 and speed_kmh > 3:
+            state = "DEPARTING"
+        else:
+            return None
 
-        if min_dist < 15 and speed_kmh < 1:
-            return "AT_STOP", next_stop
+        # Pamäť – aby sa stav neopakoval
+        vs = self.vehicle_states.get(vehicle_id, VehicleState())
 
-        if min_dist > 20 and speed_kmh > 3:
-            return "DEPARTING", next_stop
+        if vs.last_state == state and vs.last_stop_id == next_stop.stop_id:
+            return None  # nič nové
 
-        return None
+        # Uložíme nový stav
+        vs.last_state = state
+        vs.last_stop_id = next_stop.stop_id
+        self.vehicle_states[vehicle_id] = vs
+
+        return state, next_stop
