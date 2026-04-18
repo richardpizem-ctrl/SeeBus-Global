@@ -8,7 +8,17 @@ langSelect.addEventListener("change", () => {
     localStorage.setItem("lang", langSelect.value);
 });
 
-// Start stream
+/* ⭐ MAPA — inicializácia */
+const map = L.map('map').setView([48.7363, 19.1462], 13); // Banská Bystrica
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+let vehicleMarker = null;
+
+/* ⭐ STREAM */
 document.getElementById("start").addEventListener("click", () => {
     const lang = langSelect.value;
     const route = document.getElementById("route").value;
@@ -25,7 +35,6 @@ document.getElementById("start").addEventListener("click", () => {
         const msgBox = document.getElementById("message");
         const logList = document.getElementById("log-list");
 
-        // Parse JSON
         let data = null;
         try {
             data = JSON.parse(event.data);
@@ -34,38 +43,41 @@ document.getElementById("start").addEventListener("click", () => {
             return;
         }
 
-        // Update main message
+        /* ⭐ Aktualizácia textu */
         msgBox.textContent = data.text || event.data;
-
-        // Reset classes
         msgBox.className = "";
 
-        // Apply color class
         if (data.state === "ARRIVING") msgBox.classList.add("state-arriving");
         if (data.state === "AT_STOP") msgBox.classList.add("state-at_stop");
         if (data.state === "DEPARTING") msgBox.classList.add("state-departing");
         if (data.state === "MISSED") msgBox.classList.add("state-missed");
 
-        // ⭐ Add to log
+        /* ⭐ LOG */
         const entry = document.createElement("div");
         entry.className = "log-entry";
 
-        // Apply same color to log entry
         if (data.state === "ARRIVING") entry.classList.add("state-arriving");
         if (data.state === "AT_STOP") entry.classList.add("state-at_stop");
         if (data.state === "DEPARTING") entry.classList.add("state-departing");
         if (data.state === "MISSED") entry.classList.add("state-missed");
 
         entry.textContent = `${new Date().toLocaleTimeString()} — ${data.text}`;
-        logList.prepend(entry); // newest first
-    };
+        logList.prepend(entry);
 
-    eventSource.onerror = () => {
-        document.getElementById("message").textContent = "Stream disconnected.";
+        /* ⭐ MAPA — aktualizácia polohy vozidla */
+        if (data.lat && data.lon) {
+            const pos = [data.lat, data.lon];
+
+            if (!vehicleMarker) {
+                vehicleMarker = L.marker(pos).addTo(map);
+            } else {
+                vehicleMarker.setLatLng(pos);
+            }
+        }
     };
 });
 
-// Stop stream
+/* STOP */
 document.getElementById("stop").addEventListener("click", () => {
     if (eventSource) {
         eventSource.close();
