@@ -23,11 +23,12 @@ h1 {
     font-size: 16px;
 }
 
-#output {
+#output, #log {
     background: white;
     padding: 20px;
     border-radius: 8px;
     border: 1px solid #ddd;
+    margin-top: 20px;
 }
 
 #message {
@@ -37,23 +38,35 @@ h1 {
     border-radius: 6px;
 }
 
+/* Log entries */
+#log-list {
+    margin-top: 10px;
+}
+
+.log-entry {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
 /* ⭐ Farebné stavy */
 .state-arriving {
-    background: #fff3cd;   /* žltá */
+    background: #fff3cd;
     border-left: 6px solid #ffcc00;
 }
 
 .state-at_stop {
-    background: #d4edda;   /* zelená */
+    background: #d4edda;
     border-left: 6px solid #28a745;
 }
 
 .state-departing {
-    background: #cce5ff;   /* modrá */
+    background: #cce5ff;
     border-left: 6px solid #007bff;
 }
 
 .state-missed {
-    background: #f8d7da;   /* červená */
+    background: #f8d7da;
     border-left: 6px solid #dc3545;
 }
