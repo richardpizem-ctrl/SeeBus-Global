@@ -1,0 +1,6 @@
+{
+    "arriving": "{route} járat érkezik a(z) {stop} megállóhoz.",
+    "at_stop": "{route} járat jelenleg a(z) {stop} megállónál van.",
+    "departing": "{route} járat indul a(z) {stop} megállóból.",
+    "missed": "{route} járat elhaladt a(z) {stop} megálló mellett."
+}
