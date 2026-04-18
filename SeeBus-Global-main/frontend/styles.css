@@ -1,0 +1,31 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    padding: 40px;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+#controls {
+    margin-bottom: 20px;
+}
+
+#controls select, #controls button {
+    padding: 8px 12px;
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+#output {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+#message {
+    font-size: 18px;
+    white-space: pre-wrap;
+}
