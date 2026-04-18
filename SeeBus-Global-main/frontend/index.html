@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SeeBus Global</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h1>SeeBus Global – Live Announcements</h1>
+
+    <div id="controls">
+        <label for="language">Language:</label>
+        <select id="language">
+            <option value="sk">Slovensky</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="pl">Polski</option>
+            <option value="hu">Magyar</option>
+        </select>
+
+        <button id="start">Start Stream</button>
+        <button id="stop">Stop Stream</button>
+    </div>
+
+    <div id="output">
+        <h2>Latest Announcement:</h2>
+        <pre id="message">Waiting...</pre>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
