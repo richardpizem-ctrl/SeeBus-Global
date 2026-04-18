@@ -12,12 +12,13 @@ langSelect.addEventListener("change", () => {
 document.getElementById("start").addEventListener("click", () => {
     const lang = langSelect.value;
     const route = document.getElementById("route").value;
+    const vehicle = document.getElementById("vehicle").value;
 
     if (eventSource) {
         eventSource.close();
     }
 
-    const url = `http://localhost:8000/stream/events?vehicle_id=1&route=${route}&lang=${lang}`;
+    const url = `http://localhost:8000/stream/events?vehicle_id=${vehicle}&route=${route}&lang=${lang}`;
     eventSource = new EventSource(url);
 
     eventSource.onmessage = (event) => {
