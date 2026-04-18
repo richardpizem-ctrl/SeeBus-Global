@@ -1,38 +1,37 @@
-from flask import Blueprint, request, jsonify
+from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
+
 from backend.services.event_dispatcher import EventDispatcher
+from backend.gtfs.loader import stops, stop_times
 
-events_bp = Blueprint("events", __name__)
+router = APIRouter(prefix="/events", tags=["events"])
 
-# Dispatcher budeš inicializovať v main.py
-dispatcher: EventDispatcher = None
+# Globálny dispatcher pre tento endpoint
+dispatcher = EventDispatcher(stops, stop_times)
 
 
-@events_bp.route("/events/process", methods=["GET"])
-def process_event():
+@router.get("/process")
+def process_event(
+    vehicle_id: str = Query(...),
+    route: str = Query(...),
+    lat: float = Query(0.0),
+    lon: float = Query(0.0),
+    lang: str = Query("en")
+):
     """
-    API endpoint:
-    /api/events/process?vehicle_id=123&route=24&lang=sk
+    Príklad:
+    /events/process?vehicle_id=123&route=24&lat=48.73&lon=19.15&lang=sk
     """
 
-    global dispatcher
-
-    vehicle_id = request.args.get("vehicle_id")
-    route_short_name = request.args.get("route")
-    lang = request.args.get("lang", "en")
-
-    if not vehicle_id or not route_short_name:
-        return jsonify({"error": "Missing parameters"}), 400
-
-    # Simulované vozidlo (v reálnej verzii príde z GTFS-RT)
     vehicle = {
-        "lat": float(request.args.get("lat", 0)),
-        "lon": float(request.args.get("lon", 0)),
+        "lat": lat,
+        "lon": lon,
         "timestamp": 0
     }
 
-    result = dispatcher.process(vehicle_id, vehicle, route_short_name, lang)
+    result = dispatcher.process(vehicle_id, vehicle, route, lang)
 
     if not result:
-        return jsonify({"event": None})
+        return JSONResponse({"event": None})
 
-    return jsonify(result)
+    return JSONResponse(result)
