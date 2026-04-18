@@ -15,3 +15,5 @@ class TextService:
             return f"Linka {route_short_name} odchádza zo zastávky {stop_name}."
 
         return None
+if state == "MISSED":
+    return f"Linka {route_short_name} minula zastávku {stop_name}."
