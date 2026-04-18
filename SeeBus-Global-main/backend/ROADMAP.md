@@ -7,21 +7,17 @@ Roadmapa sa priebežne aktualizuje podľa stavu projektu.
 
 ## ✅ 1. Backend – Stabilizácia (HOTOVÉ)
 
-- CORE engine  
-- MIDI INPUT  
-- NOTATION ENGINE  
-- UI  
-- REAL‑TIME PROCESSING  
-- renderer_new + track manager  
-- event engine  
-- event dispatcher  
-- logging  
+- Event Engine  
+- Event Dispatcher  
+- Logging  
 - `/api/events/process`  
 - `/api/events/stream`  
 - main.py integrácia  
 - testy stabilizované  
 - __init__.py doplnené  
-- TrackManager podľa Yamaha 16‑track štandardu  
+- GTFS loader  
+- GTFS‑RT loader  
+- TrackManager (16‑track routing pre autobusy)  
 
 **Stav:** ✔ kompletne hotové
 
@@ -32,7 +28,7 @@ Roadmapa sa priebežne aktualizuje podľa stavu projektu.
 Cieľ: podpora všetkých 24 jazykov EÚ + angličtiny.
 
 ### 2.1 Backend
-- pridať parameter `lang` do API  
+- parameter `lang` v API  
 - načítavanie jazykových súborov  
 - prepojenie s EventDispatcher  
 
