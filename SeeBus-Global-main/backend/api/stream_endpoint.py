@@ -12,9 +12,11 @@ router = APIRouter(prefix="/stream", tags=["stream"])
 # Dispatcher pre jazykové hlásenia
 dispatcher = EventDispatcher(stops, stop_times)
 
-# GTFS‑RT feed (sem vložíš URL dopravného podniku)
-GTFS_RT_URL = "https://URL_TVOJHO_GTFS_RT_FEEDU"
-gtfs_rt = GTFSRTLoader(GTFS_RT_URL)
+# ⭐ PRAHA – GTFS‑RT feed
+GTFS_RT_URL = "https://api.golemio.cz/v2/gtfs/vehiclepositions"
+GTFS_RT_API_KEY = "SEM_DAJ_TVOJ_API_KLUC"
+
+gtfs_rt = GTFSRTLoader(GTFS_RT_URL, GTFS_RT_API_KEY)
 
 
 async def event_stream(vehicle_id, route, lang):
@@ -23,14 +25,12 @@ async def event_stream(vehicle_id, route, lang):
     """
 
     while True:
-        # 1) Načítaj reálne polohy vozidiel
         vehicles = gtfs_rt.fetch_vehicle_positions()
 
-        # 2) Nájdeme konkrétne vozidlo
+        # Nájdeme konkrétne vozidlo
         v = next((x for x in vehicles if x["vehicle_id"] == vehicle_id), None)
 
         if v:
-            # Reálne GPS súradnice
             vehicle = {
                 "lat": v["lat"],
                 "lon": v["lon"],
@@ -39,17 +39,14 @@ async def event_stream(vehicle_id, route, lang):
                 "timestamp": 0
             }
         else:
-            # Vozidlo sa nenašlo – fallback
             vehicle = {
                 "lat": None,
                 "lon": None,
                 "timestamp": 0
             }
 
-        # 3) Jazykové hlásenie cez EventDispatcher
         result = dispatcher.process(vehicle_id, vehicle, route, lang)
 
-        # 4) Spojíme GTFS‑RT + hlásenie
         payload = {
             "text": result.get("text") if result else "No announcement",
             "state": result.get("state") if result else "UNKNOWN",
@@ -68,9 +65,5 @@ async def stream_events(
     route: str = Query(...),
     lang: str = Query("en")
 ):
-    """
-    SSE endpoint:
-    /stream/events?vehicle_id=123&route=24&lang=sk
-    """
     generator = event_stream(vehicle_id, route, lang)
     return StreamingResponse(generator, media_type="text/event-stream")
