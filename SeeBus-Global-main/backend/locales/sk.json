@@ -1,0 +1,6 @@
+{
+    "arriving": "Linka {route} prichádza na zastávku {stop}.",
+    "at_stop": "Linka {route} stojí na zastávke {stop}.",
+    "departing": "Linka {route} odchádza zo zastávky {stop}.",
+    "missed": "Linka {route} prešla zastávku {stop}."
+}
