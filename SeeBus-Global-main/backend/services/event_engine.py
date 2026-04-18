@@ -21,6 +21,8 @@ def distance_m(lat1, lon1, lat2, lon2):
 class VehicleState:
     last_state: str | None = None
     last_stop_id: str | None = None
+    last_distance: float | None = None
+    missed_stops: set | None = None
 
 
 # -----------------------------------
@@ -64,7 +66,26 @@ class EventEngine:
         # Prevod rýchlosti
         speed_kmh = (vehicle.speed or 0) * 3.6
 
+        # Načítame pamäť vozidla
+        vs = self.vehicle_states.get(vehicle_id, VehicleState(missed_stops=set()))
+
+        # -----------------------------
+        # MISSED detection
+        # -----------------------------
+        if vs.last_distance is not None:
+            # Vozidlo sa vzďaľuje od zastávky
+            if min_dist > vs.last_distance + 10:  # +10m tolerancia
+                # A nebolo AT_STOP
+                if vs.last_state != "AT_STOP":
+                    # A ešte sme túto zastávku nehlásili ako MISSED
+                    if next_stop.stop_id not in vs.missed_stops:
+                        vs.missed_stops.add(next_stop.stop_id)
+                        self.vehicle_states[vehicle_id] = vs
+                        return "MISSED", next_stop
+
+        # -----------------------------
         # Logika stavov
+        # -----------------------------
         if 40 < min_dist < 120 and speed_kmh > 3:
             state = "ARRIVING"
         elif min_dist < 15 and speed_kmh < 1:
@@ -72,17 +93,23 @@ class EventEngine:
         elif min_dist > 20 and speed_kmh > 3:
             state = "DEPARTING"
         else:
+            # Uložíme vzdialenosť aj keď nie je stav
+            vs.last_distance = min_dist
+            self.vehicle_states[vehicle_id] = vs
             return None
 
+        # -----------------------------
         # Pamäť – aby sa stav neopakoval
-        vs = self.vehicle_states.get(vehicle_id, VehicleState())
-
+        # -----------------------------
         if vs.last_state == state and vs.last_stop_id == next_stop.stop_id:
+            vs.last_distance = min_dist
+            self.vehicle_states[vehicle_id] = vs
             return None  # nič nové
 
         # Uložíme nový stav
         vs.last_state = state
         vs.last_stop_id = next_stop.stop_id
+        vs.last_distance = min_dist
         self.vehicle_states[vehicle_id] = vs
 
         return state, next_stop
