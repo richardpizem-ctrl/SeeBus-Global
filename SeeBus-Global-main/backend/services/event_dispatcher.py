@@ -1,7 +1,13 @@
+import logging
+
 from .event_engine import EventEngine
 from .voice_service import VoiceService
 from .text_service import TextService
 from .vibration_service import VibrationService
+
+# Logger
+logger = logging.getLogger("SeeBus")
+logger.setLevel(logging.INFO)
 
 
 class EventDispatcher:
@@ -38,6 +44,17 @@ class EventDispatcher:
         )
 
         vibration_pattern = self.vibration.generate_vibration_pattern(state)
+
+        # -----------------------------
+        # LOGGING
+        # -----------------------------
+        logger.info(
+            f"[{state}] "
+            f"stop={stop.stop_name} "
+            f"voice='{voice_msg}' "
+            f"text='{text_msg}' "
+            f"vibration={vibration_pattern}"
+        )
 
         # Vrátime jednotný objekt pre frontend
         return {
