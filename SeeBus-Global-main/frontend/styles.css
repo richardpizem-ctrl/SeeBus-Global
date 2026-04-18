@@ -33,4 +33,27 @@ h1 {
 #message {
     font-size: 18px;
     white-space: pre-wrap;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+/* ⭐ Farebné stavy */
+.state-arriving {
+    background: #fff3cd;   /* žltá */
+    border-left: 6px solid #ffcc00;
+}
+
+.state-at_stop {
+    background: #d4edda;   /* zelená */
+    border-left: 6px solid #28a745;
+}
+
+.state-departing {
+    background: #cce5ff;   /* modrá */
+    border-left: 6px solid #007bff;
+}
+
+.state-missed {
+    background: #f8d7da;   /* červená */
+    border-left: 6px solid #dc3545;
 }
