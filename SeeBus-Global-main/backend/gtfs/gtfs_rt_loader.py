@@ -1,38 +1,31 @@
 import requests
-from dataclasses import dataclass
+from google.transit import gtfs_realtime_pb2
 
-@dataclass
-class VehiclePosition:
-    trip_id: str | None
-    lat: float
-    lon: float
-    speed: float | None
+class GTFSRTLoader:
+    def __init__(self, url: str):
+        self.url = url
 
-def load_gtfs_rt(url: str) -> list[VehiclePosition]:
-    """
-    Načíta GTFS-RT feed (Vehicle Positions) vo formáte protobuf → JSON.
-    Očakáva, že server poskytuje JSON (nie protobuf).
-    """
-    response = requests.get(url, timeout=5)
-    data = response.json()
+    def fetch_vehicle_positions(self):
+        feed = gtfs_realtime_pb2.FeedMessage()
+        response = requests.get(self.url)
 
-    vehicles = []
+        if response.status_code != 200:
+            return []
 
-    for entity in data.get("entity", []):
-        vp = entity.get("vehicle")
-        if not vp:
-            continue
+        feed.ParseFromString(response.content)
 
-        trip = vp.get("trip", {})
-        position = vp.get("position", {})
+        vehicles = []
+        for entity in feed.entity:
+            if entity.HasField("vehicle"):
+                vp = entity.vehicle
+                vehicles.append({
+                    "vehicle_id": vp.vehicle.id,
+                    "trip_id": vp.trip.trip_id,
+                    "route_id": vp.trip.route_id,
+                    "lat": vp.position.latitude,
+                    "lon": vp.position.longitude,
+                    "bearing": vp.position.bearing,
+                    "speed": vp.position.speed
+                })
 
-        vehicles.append(
-            VehiclePosition(
-                trip_id=trip.get("trip_id"),
-                lat=position.get("latitude"),
-                lon=position.get("longitude"),
-                speed=position.get("speed")
-            )
-        )
-
-    return vehicles
+        return vehicles
