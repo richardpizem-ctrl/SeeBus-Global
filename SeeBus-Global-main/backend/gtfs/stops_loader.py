@@ -2,25 +2,33 @@ import csv
 from dataclasses import dataclass
 
 @dataclass
-class Stop:
+class StopTime:
+    trip_id: str
     stop_id: str
-    stop_name: str
-    lat: float
-    lon: float
+    stop_sequence: int
 
-def load_stops(path: str) -> dict[str, Stop]:
-    stops = {}
+def load_stop_times(path: str) -> dict[str, list[StopTime]]:
+    stop_times_by_trip = {}
+
     with open(path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            stop = Stop(
+            st = StopTime(
+                trip_id=row["trip_id"],
                 stop_id=row["stop_id"],
-                stop_name=row["stop_name"],
-                lat=float(row["stop_lat"]),
-                lon=float(row["stop_lon"]),
+                stop_sequence=int(row["stop_sequence"])
             )
-            stops[stop.stop_id] = stop
-    return stops
 
-def get_stop_by_id(stops: dict[str, Stop], stop_id: str) -> Stop | None:
-    return stops.get(stop_id)
+            if st.trip_id not in stop_times_by_trip:
+                stop_times_by_trip[st.trip_id] = []
+
+            stop_times_by_trip[st.trip_id].append(st)
+
+    # Každý trip zoradíme podľa poradia zastávok
+    for trip_id in stop_times_by_trip:
+        stop_times_by_trip[trip_id].sort(key=lambda x: x.stop_sequence)
+
+    return stop_times_by_trip
+
+def get_stops_for_trip(stop_times_by_trip: dict[str, list[StopTime]], trip_id: str):
+    return stop_times_by_trip.get(trip_id, [])
