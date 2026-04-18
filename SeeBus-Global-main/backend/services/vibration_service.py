@@ -18,6 +18,8 @@ class VibrationService:
             # dvojité upozornenie
             return [300, 150, 300]
 
+        if state == "MISSED":
+            # silné varovanie
+            return [800, 200, 800]
+
         return None
-if state == "MISSED":
-    return [800, 200, 800]  # silné varovanie
