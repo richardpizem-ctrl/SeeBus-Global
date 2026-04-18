@@ -19,3 +19,5 @@ class VibrationService:
             return [300, 150, 300]
 
         return None
+if state == "MISSED":
+    return [800, 200, 800]  # silné varovanie
