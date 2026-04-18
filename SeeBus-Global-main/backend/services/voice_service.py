@@ -14,6 +14,7 @@ class VoiceService:
         if state == "DEPARTING":
             return f"Linka {route_short_name} odchádza zo zastávky {stop_name}."
 
+        if state == "MISSED":
+            return f"Linka {route_short_name} prešla zastávku {stop_name} bez zastavenia."
+
         return None
-if state == "MISSED":
-    return f"Linka {route_short_name} prešla zastávku {stop_name} bez zastavenia."
