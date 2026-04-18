@@ -1,0 +1,6 @@
+{
+    "arriving": "Linia {route} podjeżdża na przystanek {stop}.",
+    "at_stop": "Linia {route} znajduje się na przystanku {stop}.",
+    "departing": "Linia {route} odjeżdża z przystanku {stop}.",
+    "missed": "Linia {route} minęła przystanek {stop}."
+}
