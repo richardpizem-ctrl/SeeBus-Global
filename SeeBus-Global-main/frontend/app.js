@@ -8,14 +8,16 @@ langSelect.addEventListener("change", () => {
     localStorage.setItem("lang", langSelect.value);
 });
 
+// Start stream
 document.getElementById("start").addEventListener("click", () => {
     const lang = langSelect.value;
+    const route = document.getElementById("route").value;
 
     if (eventSource) {
         eventSource.close();
     }
 
-    const url = `http://localhost:8000/stream/events?vehicle_id=1&route=24&lang=${lang}`;
+    const url = `http://localhost:8000/stream/events?vehicle_id=1&route=${route}&lang=${lang}`;
     eventSource = new EventSource(url);
 
     eventSource.onmessage = (event) => {
@@ -27,6 +29,7 @@ document.getElementById("start").addEventListener("click", () => {
     };
 });
 
+// Stop stream
 document.getElementById("stop").addEventListener("click", () => {
     if (eventSource) {
         eventSource.close();
