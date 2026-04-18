@@ -1,56 +1,88 @@
+/* GLOBAL */
 body {
     font-family: Arial, sans-serif;
-    background: #f5f5f5;
+    background: #e9ecef;
+    margin: 0;
     padding: 40px;
+    display: flex;
+    justify-content: center;
 }
 
-h1 {
-    margin-bottom: 20px;
+.app-container {
+    width: 900px;
 }
 
-#controls {
-    margin-bottom: 20px;
+/* HEADER */
+header h1 {
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-#controls label {
-    margin-right: 6px;
+/* PANELS */
+.panel {
+    background: white;
+    padding: 20px 25px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-#controls select,
-#controls button {
+.panel h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+/* CONTROLS */
+.controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.control-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.control-block label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.control-block select {
     padding: 8px 12px;
-    margin-right: 12px;
     font-size: 16px;
 }
 
-#output, #log {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    margin-top: 20px;
+.control-buttons button {
+    padding: 10px 16px;
+    font-size: 16px;
+    margin-right: 10px;
+    cursor: pointer;
 }
 
-#message {
+/* MESSAGE BOX */
+.message-box {
     font-size: 18px;
     white-space: pre-wrap;
-    padding: 10px;
-    border-radius: 6px;
+    padding: 15px;
+    border-radius: 8px;
 }
 
-/* Log entries */
-#log-list {
-    margin-top: 10px;
+/* LOG */
+.log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .log-entry {
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    border-radius: 6px;
+    padding: 10px 14px;
+    border-radius: 8px;
     font-size: 15px;
 }
 
-/* ⭐ Farebné stavy */
+/* COLOR STATES */
 .state-arriving {
     background: #fff3cd;
     border-left: 6px solid #ffcc00;
