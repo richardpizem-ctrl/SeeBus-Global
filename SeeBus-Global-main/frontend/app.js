@@ -22,7 +22,28 @@ document.getElementById("start").addEventListener("click", () => {
     eventSource = new EventSource(url);
 
     eventSource.onmessage = (event) => {
-        document.getElementById("message").textContent = event.data;
+        const msgBox = document.getElementById("message");
+
+        // Parse JSON
+        let data = null;
+        try {
+            data = JSON.parse(event.data);
+        } catch {
+            msgBox.textContent = event.data;
+            return;
+        }
+
+        // Text
+        msgBox.textContent = data.text || event.data;
+
+        // Reset classes
+        msgBox.className = "";
+
+        // Apply color class
+        if (data.state === "ARRIVING") msgBox.classList.add("state-arriving");
+        if (data.state === "AT_STOP") msgBox.classList.add("state-at_stop");
+        if (data.state === "DEPARTING") msgBox.classList.add("state-departing");
+        if (data.state === "MISSED") msgBox.classList.add("state-missed");
     };
 
     eventSource.onerror = () => {
@@ -36,5 +57,6 @@ document.getElementById("stop").addEventListener("click", () => {
         eventSource.close();
         eventSource = null;
         document.getElementById("message").textContent = "Stream stopped.";
+        document.getElementById("message").className = "";
     }
 });
