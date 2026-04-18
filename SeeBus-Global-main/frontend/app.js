@@ -23,6 +23,7 @@ document.getElementById("start").addEventListener("click", () => {
 
     eventSource.onmessage = (event) => {
         const msgBox = document.getElementById("message");
+        const logList = document.getElementById("log-list");
 
         // Parse JSON
         let data = null;
@@ -33,7 +34,7 @@ document.getElementById("start").addEventListener("click", () => {
             return;
         }
 
-        // Text
+        // Update main message
         msgBox.textContent = data.text || event.data;
 
         // Reset classes
@@ -44,6 +45,19 @@ document.getElementById("start").addEventListener("click", () => {
         if (data.state === "AT_STOP") msgBox.classList.add("state-at_stop");
         if (data.state === "DEPARTING") msgBox.classList.add("state-departing");
         if (data.state === "MISSED") msgBox.classList.add("state-missed");
+
+        // ⭐ Add to log
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+
+        // Apply same color to log entry
+        if (data.state === "ARRIVING") entry.classList.add("state-arriving");
+        if (data.state === "AT_STOP") entry.classList.add("state-at_stop");
+        if (data.state === "DEPARTING") entry.classList.add("state-departing");
+        if (data.state === "MISSED") entry.classList.add("state-missed");
+
+        entry.textContent = `${new Date().toLocaleTimeString()} — ${data.text}`;
+        logList.prepend(entry); // newest first
     };
 
     eventSource.onerror = () => {
