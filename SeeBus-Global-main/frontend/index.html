@@ -29,28 +29,6 @@
             <div class="controls-row">
 
                 <div class="control-block">
-                    <label for="vehicle">Vehicle</label>
-                    <select id="vehicle">
-                        <option value="1">Vehicle 1</option>
-                        <option value="2">Vehicle 2</option>
-                        <option value="3">Vehicle 3</option>
-                        <option value="4">Vehicle 4</option>
-                        <option value="5">Vehicle 5</option>
-                    </select>
-                </div>
-
-                <div class="control-block">
-                    <label for="route">Route</label>
-                    <select id="route">
-                        <option value="24">24</option>
-                        <option value="25">25</option>
-                        <option value="26">26</option>
-                        <option value="27">27</option>
-                        <option value="99">99</option>
-                    </select>
-                </div>
-
-                <div class="control-block">
                     <label for="language">Language</label>
                     <select id="language">
                         <option value="sk">Slovensky</option>
@@ -62,7 +40,7 @@
                 </div>
 
                 <div class="control-buttons">
-                    <button id="start">Start Stream</button>
+                    <button id="start">Start ALL Vehicles</button>
                     <button id="stop">Stop Stream</button>
                 </div>
 
@@ -75,10 +53,11 @@
             <div id="map"></div>
         </section>
 
-        <!-- ⭐ INFO PANEL (ETA, DELAY, NEXT STOP) -->
+        <!-- ⭐ INFO PANEL (DETAIL PO KLIKNUTÍ NA VOZIDLO) -->
         <section class="panel">
             <h2>Vehicle Info</h2>
             <div id="info" class="info-box">
+                <b>Vozidlo:</b> - <br>
                 <b>Linka:</b> - <br>
                 <b>Ďalšia zastávka:</b> - <br>
                 <b>ETA:</b> - <br>
