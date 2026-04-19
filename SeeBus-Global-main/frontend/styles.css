@@ -69,7 +69,7 @@ header h1 {
     border: 2px solid #ccc;
 }
 
-/* INFO BOX (ETA, DELAY, NEXT STOP) */
+/* INFO BOX (DETAIL VOZIDLA) */
 .info-box {
     background: #f7f7f7;
     padding: 15px 20px;
