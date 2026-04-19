@@ -4,6 +4,10 @@ from typing import Dict, List, Any
 
 
 def _read_csv(path: Path) -> List[Dict[str, Any]]:
+    """
+    Načíta CSV súbor a vráti zoznam riadkov ako dict.
+    Bezpečne ignoruje neexistujúci súbor.
+    """
     rows: List[Dict[str, Any]] = []
     if not path.exists():
         return rows
@@ -12,6 +16,7 @@ def _read_csv(path: Path) -> List[Dict[str, Any]]:
         reader = csv.DictReader(f)
         for row in reader:
             rows.append(row)
+
     return rows
 
 
@@ -27,6 +32,7 @@ def load_routes(gtfs_dir: Path) -> Dict[str, Dict[str, Any]]:
         route_id = r.get("route_id")
         if route_id:
             routes_by_id[route_id] = r
+
     return routes_by_id
 
 
@@ -42,25 +48,28 @@ def load_trips(gtfs_dir: Path) -> Dict[str, Dict[str, Any]]:
         trip_id = t.get("trip_id")
         if trip_id:
             trips_by_id[trip_id] = t
+
     return trips_by_id
 
 
 def load_stop_times(gtfs_dir: Path) -> Dict[str, List[Dict[str, Any]]]:
     """
     Načíta stop_times.txt a vráti dict: trip_id -> zoznam stop_time riadkov
-    (v poradí podľa stop_sequence, ak je k dispozícii).
+    (zoradené podľa stop_sequence).
     """
     stop_times_path = gtfs_dir / "stop_times.txt"
     st_list = _read_csv(stop_times_path)
 
     stop_times_by_trip: Dict[str, List[Dict[str, Any]]] = {}
+
     for st in st_list:
         trip_id = st.get("trip_id")
         if not trip_id:
             continue
+
         stop_times_by_trip.setdefault(trip_id, []).append(st)
 
-    # zoradenie podľa stop_sequence, ak existuje
+    # zoradenie podľa stop_sequence
     for trip_id, items in stop_times_by_trip.items():
         items.sort(
             key=lambda x: int(x.get("stop_sequence", "0")) if x.get("stop_sequence") else 0
