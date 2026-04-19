@@ -47,6 +47,7 @@ async def event_stream(vehicle_id: str, route: str, lang: str):
     - nové GTFS‑RT dáta
     - nové mapovanie (routes, trips, stops)
     - nový event engine
+    - ETA + DELAY
     - pôvodné jazykové hlásenia
     """
 
@@ -58,12 +59,13 @@ async def event_stream(vehicle_id: str, route: str, lang: str):
         v = next((x for x in vehicles if x["vehicle_id"] == vehicle_id), None)
 
         if v:
-            # 3) Namapujeme vozidlo na GTFS statické dáta
+            # 3) Namapujeme vozidlo na GTFS statické dáta + ETA + DELAY
             mapped = map_vehicle_basic(
                 vehicle=v,
                 trips_by_id=trips_by_id,
                 routes_by_id=routes_by_id,
                 stops_by_id=stops,
+                stop_times_by_trip=stop_times_by_trip,
             )
 
             # 4) Event engine (ARRIVING / AT_STOP / DEPARTING / IN_TRANSIT)
@@ -84,8 +86,16 @@ async def event_stream(vehicle_id: str, route: str, lang: str):
                 "lat": mapped.lat,
                 "lon": mapped.lon,
                 "event": event.value,
+
+                # STOP-SEQUENCE + ETA + DELAY
                 "next_stop": mapped.next_stop_name,
+                "next_stop_sequence": mapped.next_stop_sequence,
                 "distance_m": mapped.distance_to_next_stop_m,
+                "eta_seconds": mapped.eta_seconds,
+                "scheduled_arrival": mapped.scheduled_arrival,
+                "delay_seconds": mapped.delay_seconds,
+
+                # Jazykové hlásenia
                 "text": announce.get("text") if announce else "No announcement",
                 "state": announce.get("state") if announce else "UNKNOWN",
             }
@@ -98,8 +108,14 @@ async def event_stream(vehicle_id: str, route: str, lang: str):
                 "lat": None,
                 "lon": None,
                 "event": "UNKNOWN",
+
                 "next_stop": None,
+                "next_stop_sequence": None,
                 "distance_m": None,
+                "eta_seconds": None,
+                "scheduled_arrival": None,
+                "delay_seconds": None,
+
                 "text": "No data",
                 "state": "UNKNOWN",
             }
