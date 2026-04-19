@@ -16,8 +16,8 @@ from backend.gtfs.gtfs_rt_loader import GTFSRTLoader
 from backend.gtfs.gtfs_mapper import map_vehicle_basic
 from backend.gtfs.event_engine import EventEngine
 
-# GTFS CACHE – routes, trips, stop_times
-from backend.gtfs.gtfs_cache import get_routes, get_trips, get_stop_times
+# GTFS CACHE – routes, trips, stop_times, shapes (NOVÉ)
+from backend.gtfs.gtfs_cache import get_routes, get_trips, get_stop_times, get_shapes
 
 
 router = APIRouter(prefix="/stream", tags=["stream"])
@@ -36,6 +36,7 @@ event_engine = EventEngine()
 routes_by_id = get_routes()
 trips_by_id = get_trips()
 stop_times_by_trip = get_stop_times()
+shapes_by_id = get_shapes()   # ⭐ NOVÉ
 
 
 async def event_stream_all(lang: str):
@@ -65,6 +66,11 @@ async def event_stream_all(lang: str):
 
             event = event_engine.classify_vehicle(mapped)
 
+            # ⭐ SHAPE ID z TRIPU
+            trip = trips_by_id.get(mapped.trip_id)
+            shape_id = trip.get("shape_id") if trip else None
+
+            # ⭐ Jazykové hlásenia
             announce = dispatcher.process(mapped.vehicle_id, {
                 "lat": mapped.lat,
                 "lon": mapped.lon,
@@ -87,6 +93,9 @@ async def event_stream_all(lang: str):
                 "eta_seconds": mapped.eta_seconds,
                 "scheduled_arrival": mapped.scheduled_arrival,
                 "delay_seconds": mapped.delay_seconds,
+
+                # ⭐ SHAPE ID PRE FRONTEND
+                "shape_id": shape_id,
 
                 # Jazykové hlásenia
                 "text": announce.get("text") if announce else "No announcement",
