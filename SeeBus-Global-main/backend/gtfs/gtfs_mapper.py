@@ -21,6 +21,10 @@ class MappedVehicle:
     next_stop_sequence: Optional[int] = None
     distance_to_next_stop_m: Optional[float] = None
 
+    eta_seconds: Optional[float] = None
+    scheduled_arrival: Optional[str] = None
+    delay_seconds: Optional[float] = None
+
 
 def haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     R = 6371000.0
@@ -40,15 +44,8 @@ def find_next_stop_by_trip(
     trip_id: Optional[str],
     stop_times_by_trip: Dict[str, List[Dict[str, Any]]],
     stops_by_id: Dict[str, Dict[str, Any]],
-) -> tuple[Optional[str], Optional[str], Optional[int], Optional[float]]:
-    """
-    Nájde najbližšiu BUDÚCU zastávku podľa stop_sequence.
-    Toto je presné mapovanie podľa GTFS tripu.
-    """
-    if not trip_id:
-        return None, None, None, None
-
-    if trip_id not in stop_times_by_trip:
+):
+    if not trip_id or trip_id not in stop_times_by_trip:
         return None, None, None, None
 
     best_stop_id = None
@@ -71,7 +68,6 @@ def find_next_stop_by_trip(
 
         dist = haversine_distance_m(lat, lon, stop_lat, stop_lon)
 
-        # Vyberáme najbližšiu budúcu zastávku
         if best_dist is None or dist < best_dist:
             best_dist = dist
             best_stop_id = stop_id
@@ -79,6 +75,39 @@ def find_next_stop_by_trip(
             best_sequence = seq
 
     return best_stop_id, best_stop_name, best_sequence, best_dist
+
+
+def compute_eta_and_delay(
+    speed: Optional[float],
+    distance_m: Optional[float],
+    trip_id: Optional[str],
+    next_sequence: Optional[int],
+    stop_times_by_trip: Dict[str, List[Dict[str, Any]]],
+):
+    if distance_m is None or next_sequence is None:
+        return None, None, None
+
+    # ETA (fallback speed)
+    spd = speed if speed and speed > 0.5 else 3.0
+    eta_seconds = distance_m / spd
+
+    # Scheduled arrival
+    scheduled_arrival = None
+    if trip_id in stop_times_by_trip:
+        for st in stop_times_by_trip[trip_id]:
+            if int(st.get("stop_sequence", -1)) == next_sequence:
+                scheduled_arrival = st.get("arrival_time")
+                break
+
+    # Delay
+    delay_seconds = None
+    if scheduled_arrival:
+        # arrival_time je "HH:MM:SS"
+        h, m, s = map(int, scheduled_arrival.split(":"))
+        scheduled_total = h * 3600 + m * 60 + s
+        delay_seconds = eta_seconds - scheduled_total
+
+    return eta_seconds, scheduled_arrival, delay_seconds
 
 
 def map_vehicle_basic(
@@ -100,15 +129,17 @@ def map_vehicle_basic(
     route_short_name = None
     route_long_name = None
 
-    # ROUTE → routes.txt
     if route_id and route_id in routes_by_id:
         route = routes_by_id[route_id]
         route_short_name = route.get("route_short_name")
         route_long_name = route.get("route_long_name")
 
-    # STOP-SEQUENCE MAPPING (KROK 9)
     next_stop_id, next_stop_name, next_seq, dist = find_next_stop_by_trip(
         lat, lon, trip_id, stop_times_by_trip, stops_by_id
+    )
+
+    eta_seconds, scheduled_arrival, delay_seconds = compute_eta_and_delay(
+        speed, dist, trip_id, next_seq, stop_times_by_trip
     )
 
     return MappedVehicle(
@@ -125,6 +156,9 @@ def map_vehicle_basic(
         next_stop_name=next_stop_name,
         next_stop_sequence=next_seq,
         distance_to_next_stop_m=dist,
+        eta_seconds=eta_seconds,
+        scheduled_arrival=scheduled_arrival,
+        delay_seconds=delay_seconds,
     )
 
 
