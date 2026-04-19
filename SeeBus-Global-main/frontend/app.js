@@ -16,7 +16,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-let vehicleMarker = null;
+/* ⭐ MARKERS PRE VŠETKY VOZIDLÁ */
+const markers = {};  // { vehicle_id: marker }
 
 /* ⭐ CUSTOM ICONS PODĽA EVENTU */
 const icons = {
@@ -49,7 +50,7 @@ const icons = {
 
 /* ⭐ SMOOTH MOVEMENT */
 function smoothMove(marker, newLat, newLon) {
-    const duration = 500; // ms
+    const duration = 500;
     const frames = 20;
     const delay = duration / frames;
 
@@ -67,17 +68,15 @@ function smoothMove(marker, newLat, newLon) {
     step();
 }
 
-/* ⭐ STREAM */
+/* ⭐ STREAM — MULTI VEHICLE */
 document.getElementById("start").addEventListener("click", () => {
     const lang = langSelect.value;
-    const route = document.getElementById("route").value;
-    const vehicle = document.getElementById("vehicle").value;
 
     if (eventSource) {
         eventSource.close();
     }
 
-    const url = `http://localhost:8000/stream/events?vehicle_id=${vehicle}&route=${route}&lang=${lang}`;
+    const url = `http://localhost:8000/stream/events/all?lang=${lang}`;
     eventSource = new EventSource(url);
 
     eventSource.onmessage = (event) => {
@@ -92,53 +91,51 @@ document.getElementById("start").addEventListener("click", () => {
             return;
         }
 
-        /* ⭐ TEXT + FARBA */
-        msgBox.textContent = data.text || event.data;
-        msgBox.className = "";
+        const vehicles = data.vehicles || [];
 
-        if (data.event === "ARRIVING") msgBox.classList.add("state-arriving");
-        if (data.event === "AT_STOP") msgBox.classList.add("state-at_stop");
-        if (data.event === "DEPARTING") msgBox.classList.add("state-departing");
-        if (data.event === "IN_TRANSIT") msgBox.classList.add("state-transit");
+        /* ⭐ PRE KAŽDÉ VOZIDLO */
+        vehicles.forEach(v => {
+            if (!v.lat || !v.lon) return;
 
-        /* ⭐ LOG */
-        const entry = document.createElement("div");
-        entry.className = "log-entry";
+            const pos = [v.lat, v.lon];
 
-        if (data.event === "ARRIVING") entry.classList.add("state-arriving");
-        if (data.event === "AT_STOP") entry.classList.add("state-at_stop");
-        if (data.event === "DEPARTING") entry.classList.add("state-departing");
-        if (data.event === "IN_TRANSIT") entry.classList.add("state-transit");
-
-        entry.textContent = `${new Date().toLocaleTimeString()} — ${data.text}`;
-        logList.prepend(entry);
-
-        /* ⭐ MAPA — aktualizácia polohy vozidla */
-        if (data.lat && data.lon) {
-            const pos = [data.lat, data.lon];
-
-            if (!vehicleMarker) {
-                vehicleMarker = L.marker(pos, {
-                    icon: icons[data.event] || icons.UNKNOWN
+            /* Ak marker neexistuje → vytvoríme */
+            if (!markers[v.vehicle_id]) {
+                const marker = L.marker(pos, {
+                    icon: icons[v.event] || icons.UNKNOWN
                 }).addTo(map);
-            } else {
-                vehicleMarker.setIcon(icons[data.event] || icons.UNKNOWN);
-                smoothMove(vehicleMarker, data.lat, data.lon);
-            }
-        }
 
-        /* ⭐ ETA + DELAY + NEXT STOP */
-        const infoBox = document.getElementById("info");
-        infoBox.innerHTML = `
-            <b>Linka:</b> ${data.route}<br>
-            <b>Ďalšia zastávka:</b> ${data.next_stop || "-"}<br>
-            <b>ETA:</b> ${data.eta_seconds ? Math.round(data.eta_seconds) + " s" : "-"}<br>
-            <b>Meškanie:</b> ${data.delay_seconds ? Math.round(data.delay_seconds) + " s" : "-"}<br>
-        `;
+                marker.bindPopup(`Vozidlo ${v.vehicle_id}<br>Linka ${v.route}`);
+
+                markers[v.vehicle_id] = marker;
+            } else {
+                /* Existujúci marker → aktualizácia */
+                const marker = markers[v.vehicle_id];
+                marker.setIcon(icons[v.event] || icons.UNKNOWN);
+                smoothMove(marker, v.lat, v.lon);
+            }
+        });
+
+        /* ⭐ LOG — posledné hlásenie (z posledného vozidla) */
+        if (vehicles.length > 0) {
+            const last = vehicles[0];
+            msgBox.textContent = last.text || "No announcement";
+            msgBox.className = "";
+
+            if (last.event === "ARRIVING") msgBox.classList.add("state-arriving");
+            if (last.event === "AT_STOP") msgBox.classList.add("state-at_stop");
+            if (last.event === "DEPARTING") msgBox.classList.add("state-departing");
+            if (last.event === "IN_TRANSIT") msgBox.classList.add("state-transit");
+
+            const entry = document.createElement("div");
+            entry.className = "log-entry";
+            entry.textContent = `${new Date().toLocaleTimeString()} — ${last.text}`;
+            logList.prepend(entry);
+        }
     };
 });
 
-/* STOP */
+/* ⭐ STOP STREAM */
 document.getElementById("stop").addEventListener("click", () => {
     if (eventSource) {
         eventSource.close();
