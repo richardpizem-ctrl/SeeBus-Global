@@ -19,6 +19,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 /* ⭐ MARKERS PRE VŠETKY VOZIDLÁ */
 const markers = {};  // { vehicle_id: marker }
 
+/* ⭐ SELECTED VEHICLE (po kliknutí) */
+let selectedVehicleId = null;
+
 /* ⭐ CUSTOM ICONS PODĽA EVENTU */
 const icons = {
     IN_TRANSIT: L.icon({
@@ -105,7 +108,11 @@ document.getElementById("start").addEventListener("click", () => {
                     icon: icons[v.event] || icons.UNKNOWN
                 }).addTo(map);
 
-                marker.bindPopup(`Vozidlo ${v.vehicle_id}<br>Linka ${v.route}`);
+                /* ⭐ KROK 17 — kliknutie na vozidlo */
+                marker.on("click", () => {
+                    selectedVehicleId = v.vehicle_id;
+                    updateInfoPanel(v);
+                });
 
                 markers[v.vehicle_id] = marker;
             } else {
@@ -113,6 +120,11 @@ document.getElementById("start").addEventListener("click", () => {
                 const marker = markers[v.vehicle_id];
                 marker.setIcon(icons[v.event] || icons.UNKNOWN);
                 smoothMove(marker, v.lat, v.lon);
+            }
+
+            /* ⭐ Ak je toto vybrané vozidlo → aktualizuj info panel */
+            if (selectedVehicleId === v.vehicle_id) {
+                updateInfoPanel(v);
             }
         });
 
@@ -134,6 +146,19 @@ document.getElementById("start").addEventListener("click", () => {
         }
     };
 });
+
+/* ⭐ INFO PANEL UPDATE FUNKCIA */
+function updateInfoPanel(v) {
+    const infoBox = document.getElementById("info");
+    infoBox.innerHTML = `
+        <b>Vozidlo:</b> ${v.vehicle_id}<br>
+        <b>Linka:</b> ${v.route || "-"}<br>
+        <b>Ďalšia zastávka:</b> ${v.next_stop || "-"}<br>
+        <b>ETA:</b> ${v.eta_seconds ? Math.round(v.eta_seconds) + " s" : "-"}<br>
+        <b>Meškanie:</b> ${v.delay_seconds ? Math.round(v.delay_seconds) + " s" : "-"}<br>
+        <b>Stav:</b> ${v.event}<br>
+    `;
+}
 
 /* ⭐ STOP STREAM */
 document.getElementById("stop").addEventListener("click", () => {
