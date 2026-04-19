@@ -1,171 +1,116 @@
-let eventSource = null;
+import asyncio
+import json
+from fastapi import APIRouter, Query
+from fastapi.responses import StreamingResponse
 
-/* ⭐ LANGUAGE — load saved language */
-const langSelect = document.getElementById("language");
-langSelect.value = localStorage.getItem("lang") || "sk";
+# Jazykové hlásenia
+from backend.services.event_dispatcher import EventDispatcher
 
-langSelect.addEventListener("change", () => {
-    localStorage.setItem("lang", langSelect.value);
-});
+# Pôvodné stops + stop_times (pre jazykové hlásenia)
+from backend.gtfs.loader import stops, stop_times
 
-/* ⭐ MAPA — inicializácia */
-const map = L.map('map').setView([48.7363, 19.1462], 13); // Banská Bystrica
+# GTFS‑RT loader
+from backend.gtfs.gtfs_rt_loader import GTFSRTLoader
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-}).addTo(map);
+# Mapovanie + event engine
+from backend.gtfs.gtfs_mapper import map_vehicle_basic
+from backend.gtfs.event_engine import EventEngine
 
-/* ⭐ MARKERS PRE VŠETKY VOZIDLÁ */
-const markers = {};  // { vehicle_id: marker }
+# GTFS CACHE – routes, trips, stop_times, shapes (NOVÉ)
+from backend.gtfs.gtfs_cache import get_routes, get_trips, get_stop_times, get_shapes
 
-/* ⭐ SELECTED VEHICLE (po kliknutí) */
-let selectedVehicleId = null;
 
-/* ⭐ CUSTOM ICONS PODĽA EVENTU */
-const icons = {
-    IN_TRANSIT: L.icon({
-        iconUrl: 'bus_blue.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    }),
-    ARRIVING: L.icon({
-        iconUrl: 'bus_yellow.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    }),
-    AT_STOP: L.icon({
-        iconUrl: 'bus_green.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    }),
-    DEPARTING: L.icon({
-        iconUrl: 'bus_orange.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    }),
-    UNKNOWN: L.icon({
-        iconUrl: 'bus_gray.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    })
-};
+router = APIRouter(prefix="/stream", tags=["stream"])
 
-/* ⭐ SMOOTH MOVEMENT */
-function smoothMove(marker, newLat, newLon) {
-    const duration = 500;
-    const frames = 20;
-    const delay = duration / frames;
+# Dispatcher pre jazykové hlásenia
+dispatcher = EventDispatcher(stops, stop_times)
 
-    const start = marker.getLatLng();
-    const dLat = (newLat - start.lat) / frames;
-    const dLon = (newLon - start.lng) / frames;
+# ⭐ PRAHA – GTFS‑RT feed
+GTFS_RT_URL = "https://api.golemio.cz/v2/gtfs/vehiclepositions"
+GTFS_RT_API_KEY = "SEM_DAJ_TVOJ_API_KLUC"
 
-    let i = 0;
-    const step = () => {
-        if (i >= frames) return;
-        marker.setLatLng([start.lat + dLat * i, start.lng + dLon * i]);
-        i++;
-        setTimeout(step, delay);
-    };
-    step();
-}
+gtfs_rt = GTFSRTLoader(GTFS_RT_URL, GTFS_RT_API_KEY)
+event_engine = EventEngine()
 
-/* ⭐ STREAM — MULTI VEHICLE */
-document.getElementById("start").addEventListener("click", () => {
-    const lang = langSelect.value;
+# ⭐ STATIC GTFS – cez CACHE
+routes_by_id = get_routes()
+trips_by_id = get_trips()
+stop_times_by_trip = get_stop_times()
+shapes_by_id = get_shapes()   # ⭐ NOVÉ
 
-    if (eventSource) {
-        eventSource.close();
-    }
 
-    const url = `http://localhost:8000/stream/events/all?lang=${lang}`;
-    eventSource = new EventSource(url);
+async def event_stream_all(lang: str):
+    """
+    SSE stream pre VŠETKY vozidlá naraz.
+    Každú sekundu:
+    - načíta všetky GTFS‑RT vozidlá
+    - namapuje ich na GTFS statické dáta
+    - vypočíta ETA + DELAY
+    - určí event (ARRIVING / AT_STOP / DEPARTING / IN_TRANSIT)
+    - vygeneruje jazykové hlásenia
+    - pošle pole vozidiel
+    """
 
-    eventSource.onmessage = (event) => {
-        const msgBox = document.getElementById("message");
-        const logList = document.getElementById("log-list");
+    while True:
+        vehicles = gtfs_rt.fetch_vehicle_positions()
+        result_list = []
 
-        let data = null;
-        try {
-            data = JSON.parse(event.data);
-        } catch {
-            msgBox.textContent = event.data;
-            return;
-        }
+        for v in vehicles:
+            mapped = map_vehicle_basic(
+                vehicle=v,
+                trips_by_id=trips_by_id,
+                routes_by_id=routes_by_id,
+                stops_by_id=stops,
+                stop_times_by_trip=stop_times_by_trip,
+            )
 
-        const vehicles = data.vehicles || [];
+            event = event_engine.classify_vehicle(mapped)
 
-        /* ⭐ PRE KAŽDÉ VOZIDLO */
-        vehicles.forEach(v => {
-            if (!v.lat || !v.lon) return;
+            # ⭐ SHAPE ID z TRIPU
+            trip = trips_by_id.get(mapped.trip_id)
+            shape_id = trip.get("shape_id") if trip else None
 
-            const pos = [v.lat, v.lon];
+            # ⭐ Jazykové hlásenia
+            announce = dispatcher.process(mapped.vehicle_id, {
+                "lat": mapped.lat,
+                "lon": mapped.lon,
+                "speed": mapped.speed or 0,
+                "bearing": mapped.bearing or 0,
+                "timestamp": 0
+            }, mapped.route_short_name or "", lang)
 
-            /* Ak marker neexistuje → vytvoríme */
-            if (!markers[v.vehicle_id]) {
-                const marker = L.marker(pos, {
-                    icon: icons[v.event] || icons.UNKNOWN
-                }).addTo(map);
+            result_list.append({
+                "vehicle_id": mapped.vehicle_id,
+                "route": mapped.route_short_name,
+                "lat": mapped.lat,
+                "lon": mapped.lon,
+                "event": event.value,
 
-                /* ⭐ KROK 17 — kliknutie na vozidlo */
-                marker.on("click", () => {
-                    selectedVehicleId = v.vehicle_id;
-                    updateInfoPanel(v);
-                });
+                # STOP-SEQUENCE + ETA + DELAY
+                "next_stop": mapped.next_stop_name,
+                "next_stop_sequence": mapped.next_stop_sequence,
+                "distance_m": mapped.distance_to_next_stop_m,
+                "eta_seconds": mapped.eta_seconds,
+                "scheduled_arrival": mapped.scheduled_arrival,
+                "delay_seconds": mapped.delay_seconds,
 
-                markers[v.vehicle_id] = marker;
-            } else {
-                /* Existujúci marker → aktualizácia */
-                const marker = markers[v.vehicle_id];
-                marker.setIcon(icons[v.event] || icons.UNKNOWN);
-                smoothMove(marker, v.lat, v.lon);
-            }
+                # ⭐ SHAPE ID PRE FRONTEND
+                "shape_id": shape_id,
 
-            /* ⭐ Ak je toto vybrané vozidlo → aktualizuj info panel */
-            if (selectedVehicleId === v.vehicle_id) {
-                updateInfoPanel(v);
-            }
-        });
+                # Jazykové hlásenia
+                "text": announce.get("text") if announce else "No announcement",
+                "state": announce.get("state") if announce else "UNKNOWN",
+            })
 
-        /* ⭐ LOG — posledné hlásenie (z posledného vozidla) */
-        if (vehicles.length > 0) {
-            const last = vehicles[0];
-            msgBox.textContent = last.text || "No announcement";
-            msgBox.className = "";
+        payload = {"vehicles": result_list}
 
-            if (last.event === "ARRIVING") msgBox.classList.add("state-arriving");
-            if (last.event === "AT_STOP") msgBox.classList.add("state-at_stop");
-            if (last.event === "DEPARTING") msgBox.classList.add("state-departing");
-            if (last.event === "IN_TRANSIT") msgBox.classList.add("state-transit");
+        yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(1)
 
-            const entry = document.createElement("div");
-            entry.className = "log-entry";
-            entry.textContent = `${new Date().toLocaleTimeString()} — ${last.text}`;
-            logList.prepend(entry);
-        }
-    };
-});
 
-/* ⭐ INFO PANEL UPDATE FUNKCIA */
-function updateInfoPanel(v) {
-    const infoBox = document.getElementById("info");
-    infoBox.innerHTML = `
-        <b>Vozidlo:</b> ${v.vehicle_id}<br>
-        <b>Linka:</b> ${v.route || "-"}<br>
-        <b>Ďalšia zastávka:</b> ${v.next_stop || "-"}<br>
-        <b>ETA:</b> ${v.eta_seconds ? Math.round(v.eta_seconds) + " s" : "-"}<br>
-        <b>Meškanie:</b> ${v.delay_seconds ? Math.round(v.delay_seconds) + " s" : "-"}<br>
-        <b>Stav:</b> ${v.event}<br>
-    `;
-}
-
-/* ⭐ STOP STREAM */
-document.getElementById("stop").addEventListener("click", () => {
-    if (eventSource) {
-        eventSource.close();
-        eventSource = null;
-        document.getElementById("message").textContent = "Stream stopped.";
-        document.getElementById("message").className = "";
-    }
-});
+@router.get("/events/all")
+async def stream_events_all(
+    lang: str = Query("en")
+):
+    generator = event_stream_all(lang)
+    return StreamingResponse(generator, media_type="text/event-stream")
