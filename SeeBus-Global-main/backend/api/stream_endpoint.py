@@ -1,6 +1,5 @@
 import asyncio
 import json
-from pathlib import Path
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
@@ -10,15 +9,15 @@ from backend.services.event_dispatcher import EventDispatcher
 # Statické GTFS dáta (pôvodné stops + stop_times)
 from backend.gtfs.loader import stops, stop_times
 
-# Nový robustný loader (verzia 2)
+# GTFS‑RT loader
 from backend.gtfs.gtfs_rt_loader import GTFSRTLoader
 
 # Nové moduly
 from backend.gtfs.gtfs_mapper import map_vehicle_basic
 from backend.gtfs.event_engine import EventEngine
 
-# Static loader – nový modul
-from backend.gtfs.static_loader import load_routes, load_trips, load_stop_times
+# ⭐ GTFS CACHE – nový modul
+from backend.gtfs.gtfs_cache import get_routes, get_trips, get_stop_times
 
 
 router = APIRouter(prefix="/stream", tags=["stream"])
@@ -33,22 +32,20 @@ GTFS_RT_API_KEY = "SEM_DAJ_TVOJ_API_KLUC"
 gtfs_rt = GTFSRTLoader(GTFS_RT_URL, GTFS_RT_API_KEY)
 event_engine = EventEngine()
 
-# ⭐ STATIC GTFS – načítanie routes, trips, stop_times
-GTFS_DIR = Path("backend/gtfs/static")  # uprav podľa tvojej štruktúry
-
-routes_by_id = load_routes(GTFS_DIR)
-trips_by_id = load_trips(GTFS_DIR)
-stop_times_by_trip = load_stop_times(GTFS_DIR)
+# ⭐ STATIC GTFS – teraz cez CACHE
+routes_by_id = get_routes()
+trips_by_id = get_trips()
+stop_times_by_trip = get_stop_times()
 
 
 async def event_stream(vehicle_id: str, route: str, lang: str):
     """
     MIGROVANÝ SSE stream:
-    - nové GTFS‑RT dáta
-    - nové mapovanie (routes, trips, stops)
-    - nový event engine
+    - GTFS‑RT dáta
+    - mapovanie (routes, trips, stops)
+    - event engine
     - ETA + DELAY
-    - pôvodné jazykové hlásenia
+    - jazykové hlásenia
     """
 
     while True:
