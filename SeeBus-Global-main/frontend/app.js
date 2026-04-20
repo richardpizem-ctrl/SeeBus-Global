@@ -69,6 +69,13 @@ const icons = {
     })
 };
 
+/* ⭐ KROK 24 — ZVÝRAZNENÁ IKONKA PRE VYBRANÉ VOZIDLO */
+const selectedIcon = L.icon({
+    iconUrl: 'bus_blue.png',   // môžeš dať vlastnú ikonku
+    iconSize: [42, 42],
+    iconAnchor: [21, 21]
+});
+
 /* ⭐ SMOOTH MOVEMENT */
 function smoothMove(marker, newLat, newLon) {
     const duration = 500;
@@ -105,7 +112,7 @@ async function loadShape(shapeId) {
     }
 }
 
-/* ⭐ DRAW SHAPE (polyline) — KROK 23: farba podľa linky */
+/* ⭐ DRAW SHAPE (polyline) — farba podľa linky */
 function drawShape(points, route) {
     if (!points) return;
 
@@ -159,12 +166,16 @@ document.getElementById("start").addEventListener("click", () => {
                     icon: icons[v.event] || icons.UNKNOWN
                 }).addTo(map);
 
-                /* ⭐ KROK 21 + 22 + 23 — polyline + auto‑zoom + farba */
+                /* ⭐ KROK 21 + 22 + 23 + 24 */
                 marker.on("click", () => {
                     selectedVehicleId = v.vehicle_id;
                     updateInfoPanel(v);
 
                     focusOnVehicle(v.lat, v.lon);
+
+                    // ⭐ KROK 24 — zvýraznenie vybraného vozidla
+                    Object.values(markers).forEach(m => m.setIcon(icons.IN_TRANSIT));
+                    marker.setIcon(selectedIcon);
 
                     if (v.shape_id) {
                         loadShape(v.shape_id).then(points => {
@@ -177,7 +188,13 @@ document.getElementById("start").addEventListener("click", () => {
             } else {
                 /* Existujúci marker → aktualizácia */
                 const marker = markers[v.vehicle_id];
-                marker.setIcon(icons[v.event] || icons.UNKNOWN);
+
+                if (selectedVehicleId === v.vehicle_id) {
+                    marker.setIcon(selectedIcon);   // ⭐ zvýraznený marker
+                } else {
+                    marker.setIcon(icons[v.event] || icons.UNKNOWN);
+                }
+
                 smoothMove(marker, v.lat, v.lon);
             }
 
