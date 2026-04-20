@@ -1,3 +1,7 @@
+/* ============================================================
+   SeeBus-Global – v1.0.0 Polished Frontend Styles
+   ============================================================ */
+
 /* GLOBAL */
 body {
     font-family: Arial, sans-serif;
@@ -124,4 +128,79 @@ header h1 {
 .state-missed {
     background: #f8d7da;
     border-left: 6px solid #dc3545;
+}
+
+/* ============================================================
+   ⭐ DOPLNENÉ ANIMÁCIE, EFEKTY, POLISHING
+   ============================================================ */
+
+/* ⭐ BUS ICONS – tieň + hover efekt */
+.bus-icon {
+    filter: drop-shadow(0 0 4px rgba(0,0,0,0.4));
+    transition: transform 0.15s ease-in-out;
+}
+
+.bus-icon:hover {
+    transform: scale(1.08);
+}
+
+/* ⭐ SELECTED VEHICLE – väčšia ikona + silnejší tieň */
+.bus-icon.selected {
+    filter: drop-shadow(0 0 6px rgba(0,0,0,0.6));
+    transform: scale(1.15);
+}
+
+/* ⭐ ARRIVING – pulzujúca animácia */
+.pulse {
+    animation: pulseAnim 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseAnim {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+/* ⭐ MESSAGE FADE-IN */
+.fade {
+    animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ⭐ INFO PANEL – moderný vzhľad */
+#info {
+    padding: 12px;
+    border-radius: 8px;
+    background: #ffffffdd;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 0 6px rgba(0,0,0,0.15);
+    line-height: 1.5;
+}
+
+.info-title {
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+/* ⭐ LOG PANEL – ikonky + fade */
+.log-entry {
+    padding: 6px 8px;
+    border-bottom: 1px solid #ddd;
+    animation: fadeIn 0.25s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.log-icon {
+    font-size: 16px;
+}
+
+/* ⭐ STOP MARKERS – jemný hover */
+.leaflet-interactive:hover {
+    filter: brightness(1.2);
 }
