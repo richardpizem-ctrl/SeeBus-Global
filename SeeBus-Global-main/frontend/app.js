@@ -1,3 +1,8 @@
+/* ============================================================
+   SeeBus-Global – v1.0.0 Polished Frontend
+   Kompletný app.js s kozmetickými úpravami
+   ============================================================ */
+
 let eventSource = null;
 
 /* ⭐ LANGUAGE — load saved language */
@@ -9,7 +14,7 @@ langSelect.addEventListener("change", () => {
 });
 
 /* ⭐ MAPA — inicializácia */
-const map = L.map('map').setView([48.7363, 19.1462], 13); // Banská Bystrica
+const map = L.map('map').setView([48.7363, 19.1462], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -17,7 +22,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 /* ⭐ MARKERS PRE VŠETKY VOZIDLÁ */
-const markers = {};  // { vehicle_id: marker }
+const markers = {};
 
 /* ⭐ SELECTED VEHICLE */
 let selectedVehicleId = null;
@@ -25,10 +30,10 @@ let selectedVehicleId = null;
 /* ⭐ POLYLINE PRE TRASU */
 let currentShapePolyline = null;
 
-/* ⭐ ZASTÁVKY NA TRASE (KROK 25) */
+/* ⭐ ZASTÁVKY NA TRASE */
 let currentStopMarkers = [];
 
-/* ⭐ FAREBNÉ TRASY PODĽA LINKY (KROK 23) */
+/* ⭐ FAREBNÉ TRASY PODĽA LINKY */
 const routeColors = {
     "24": "#ff0000",
     "20": "#00aaff",
@@ -40,7 +45,7 @@ const routeColors = {
 };
 
 function getRouteColor(route) {
-    return routeColors[route] || "#007bff"; // default modrá
+    return routeColors[route] || "#007bff";
 }
 
 /* ⭐ CUSTOM ICONS PODĽA EVENTU */
@@ -48,63 +53,66 @@ const icons = {
     IN_TRANSIT: L.icon({
         iconUrl: 'bus_blue.png',
         iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconAnchor: [16, 16],
+        className: "bus-icon"
     }),
     ARRIVING: L.icon({
         iconUrl: 'bus_yellow.png',
         iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconAnchor: [16, 16],
+        className: "bus-icon pulse"
     }),
     AT_STOP: L.icon({
         iconUrl: 'bus_green.png',
         iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconAnchor: [16, 16],
+        className: "bus-icon"
     }),
     DEPARTING: L.icon({
         iconUrl: 'bus_orange.png',
         iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconAnchor: [16, 16],
+        className: "bus-icon"
     }),
     UNKNOWN: L.icon({
         iconUrl: 'bus_gray.png',
         iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconAnchor: [16, 16],
+        className: "bus-icon"
     })
 };
 
-/* ⭐ KROK 24 — ZVÝRAZNENÁ IKONKA PRE VYBRANÉ VOZIDLO */
+/* ⭐ ZVÝRAZNENÁ IKONKA PRE VYBRANÉ VOZIDLO */
 const selectedIcon = L.icon({
     iconUrl: 'bus_blue.png',
     iconSize: [42, 42],
-    iconAnchor: [21, 21]
+    iconAnchor: [21, 21],
+    className: "bus-icon selected"
 });
 
-/* ⭐ SMOOTH MOVEMENT */
+/* ⭐ SMOOTH MOVEMENT (requestAnimationFrame) */
 function smoothMove(marker, newLat, newLon) {
-    const duration = 500;
-    const frames = 20;
-    const delay = duration / frames;
-
+    const duration = 400;
     const start = marker.getLatLng();
-    const dLat = (newLat - start.lat) / frames;
-    const dLon = (newLon - start.lng) / frames;
+    const startTime = performance.now();
 
-    let i = 0;
-    const step = () => {
-        if (i >= frames) return;
-        marker.setLatLng([start.lat + dLat * i, start.lng + dLon * i]);
-        i++;
-        setTimeout(step, delay);
-    };
-    step();
+    function animate(time) {
+        const t = Math.min((time - startTime) / duration, 1);
+        const lat = start.lat + (newLat - start.lat) * t;
+        const lon = start.lng + (newLon - start.lng) * t;
+        marker.setLatLng([lat, lon]);
+        if (t < 1) requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
 }
 
-/* ⭐ AUTO‑ZOOM NA VYBRANÉ VOZIDLO */
+/* ⭐ AUTO‑ZOOM – jemný flyTo */
 function focusOnVehicle(lat, lon) {
-    map.setView([lat, lon], 16, { animate: true });
+    map.flyTo([lat, lon], 16, { duration: 0.8 });
 }
 
-/* ⭐ LOAD SHAPE (backend → frontend) */
+/* ⭐ LOAD SHAPE */
 async function loadShape(shapeId) {
     if (!shapeId) return null;
     try {
@@ -115,7 +123,7 @@ async function loadShape(shapeId) {
     }
 }
 
-/* ⭐ DRAW SHAPE (polyline) — farba podľa linky */
+/* ⭐ DRAW SHAPE – zvýraznená trasa */
 function drawShape(points, route) {
     if (!points) return;
 
@@ -127,18 +135,18 @@ function drawShape(points, route) {
 
     currentShapePolyline = L.polyline(latlngs, {
         color: getRouteColor(route),
-        weight: 4,
-        opacity: 0.85
+        weight: 6,
+        opacity: 0.95
     }).addTo(map);
 }
 
-/* ⭐ KROK 25 — CLEAR STOPS */
+/* ⭐ CLEAR STOPS */
 function clearStops() {
     currentStopMarkers.forEach(m => map.removeLayer(m));
     currentStopMarkers = [];
 }
 
-/* ⭐ KROK 25 — LOAD STOPS */
+/* ⭐ LOAD STOPS */
 async function loadStops(tripId) {
     try {
         const res = await fetch(`http://localhost:8000/stops/${tripId}`);
@@ -148,21 +156,20 @@ async function loadStops(tripId) {
     }
 }
 
-/* ⭐ KROK 25 — DRAW STOPS */
+/* ⭐ DRAW STOPS – zvýraznenie prvej zastávky */
 function drawStops(stops) {
     clearStops();
 
     stops.forEach((s, index) => {
         const marker = L.circleMarker([s.lat, s.lon], {
-            radius: 6,
+            radius: index === 0 ? 8 : 6,
             color: index === 0 ? "#ffcc00" : "#333333",
             fillColor: index === 0 ? "#ffcc00" : "#555555",
-            fillOpacity: 0.9,
+            fillOpacity: 0.95,
             weight: 2
         }).addTo(map);
 
         marker.bindPopup(`<b>${s.name}</b><br>Sequence: ${s.sequence}`);
-
         currentStopMarkers.push(marker);
     });
 }
@@ -171,9 +178,7 @@ function drawStops(stops) {
 document.getElementById("start").addEventListener("click", () => {
     const lang = langSelect.value;
 
-    if (eventSource) {
-        eventSource.close();
-    }
+    if (eventSource) eventSource.close();
 
     const url = `http://localhost:8000/stream/events/all?lang=${lang}`;
     eventSource = new EventSource(url);
@@ -192,19 +197,17 @@ document.getElementById("start").addEventListener("click", () => {
 
         const vehicles = data.vehicles || [];
 
-        /* ⭐ PRE KAŽDÉ VOZIDLO */
         vehicles.forEach(v => {
-            if (!v.lat || !v.lon) return;
+            if (v.lat == null || v.lon == null) return;
 
             const pos = [v.lat, v.lon];
 
-            /* Ak marker neexistuje → vytvoríme */
+            /* NOVÝ MARKER */
             if (!markers[v.vehicle_id]) {
                 const marker = L.marker(pos, {
                     icon: icons[v.event] || icons.UNKNOWN
                 }).addTo(map);
 
-                /* ⭐ KROK 21–25 */
                 marker.on("click", () => {
                     selectedVehicleId = v.vehicle_id;
                     updateInfoPanel(v);
@@ -214,18 +217,13 @@ document.getElementById("start").addEventListener("click", () => {
                     Object.values(markers).forEach(m => m.setIcon(icons.IN_TRANSIT));
                     marker.setIcon(selectedIcon);
 
-                    if (v.shape_id) {
-                        loadShape(v.shape_id).then(points => {
-                            drawShape(points, v.route);
-                        });
-                    }
-
+                    if (v.shape_id) loadShape(v.shape_id).then(points => drawShape(points, v.route));
                     loadStops(v.trip_id).then(drawStops);
                 });
 
                 markers[v.vehicle_id] = marker;
             } else {
-                /* Existujúci marker → aktualizácia */
+                /* EXISTUJÚCI MARKER */
                 const marker = markers[v.vehicle_id];
 
                 if (selectedVehicleId === v.vehicle_id) {
@@ -237,35 +235,31 @@ document.getElementById("start").addEventListener("click", () => {
                 smoothMove(marker, v.lat, v.lon);
             }
 
-            if (selectedVehicleId === v.vehicle_id) {
-                updateInfoPanel(v);
-            }
+            if (selectedVehicleId === v.vehicle_id) updateInfoPanel(v);
         });
 
-        /* ⭐ LOG — posledné hlásenie */
+        /* ⭐ LOG PANEL */
         if (vehicles.length > 0) {
-            const last = vehicles[0];
-            msgBox.textContent = last.text || "No announcement";
-            msgBox.className = "";
+            const last = vehicles.at(0);
 
-            if (last.event === "ARRIVING") msgBox.classList.add("state-arriving");
-            if (last.event === "AT_STOP") msgBox.classList.add("state-at_stop");
-            if (last.event === "DEPARTING") msgBox.classList.add("state-departing");
-            if (last.event === "IN_TRANSIT") msgBox.classList.add("state-transit");
+            msgBox.textContent = last.text || "No announcement";
+            msgBox.className = "fade";
+
+            msgBox.classList.add(`state-${last.event.toLowerCase()}`);
 
             const entry = document.createElement("div");
             entry.className = "log-entry";
-            entry.textContent = `${new Date().toLocaleTimeString()} — ${last.text}`;
+            entry.innerHTML = `<span class="log-icon">🚌</span> ${new Date().toLocaleTimeString()} — ${last.text}`;
             logList.prepend(entry);
         }
     };
 });
 
-/* ⭐ INFO PANEL UPDATE FUNKCIA */
+/* ⭐ INFO PANEL */
 function updateInfoPanel(v) {
     const infoBox = document.getElementById("info");
     infoBox.innerHTML = `
-        <b>Vozidlo:</b> ${v.vehicle_id}<br>
+        <div class="info-title">🚌 Vozidlo ${v.vehicle_id}</div>
         <b>Linka:</b> ${v.route || "-"}<br>
         <b>Ďalšia zastávka:</b> ${v.next_stop || "-"}<br>
         <b>ETA:</b> ${v.eta_seconds ? Math.round(v.eta_seconds) + " s" : "-"}<br>
