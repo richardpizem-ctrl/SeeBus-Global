@@ -25,6 +25,21 @@ let selectedVehicleId = null;
 /* ⭐ POLYLINE PRE TRASU */
 let currentShapePolyline = null;
 
+/* ⭐ FAREBNÉ TRASY PODĽA LINKY (KROK 23) */
+const routeColors = {
+    "24": "#ff0000",
+    "20": "#00aaff",
+    "22": "#ffaa00",
+    "90": "#00cc44",
+    "97": "#cc00ff",
+    "21": "#ff6600",
+    "25": "#009933"
+};
+
+function getRouteColor(route) {
+    return routeColors[route] || "#007bff"; // default modrá
+}
+
 /* ⭐ CUSTOM ICONS PODĽA EVENTU */
 const icons = {
     IN_TRANSIT: L.icon({
@@ -74,7 +89,7 @@ function smoothMove(marker, newLat, newLon) {
     step();
 }
 
-/* ⭐ AUTO‑ZOOM NA VYBRANÉ VOZIDLO (KROK 22) */
+/* ⭐ AUTO‑ZOOM NA VYBRANÉ VOZIDLO */
 function focusOnVehicle(lat, lon) {
     map.setView([lat, lon], 16, { animate: true });
 }
@@ -90,8 +105,8 @@ async function loadShape(shapeId) {
     }
 }
 
-/* ⭐ DRAW SHAPE (polyline) */
-function drawShape(points) {
+/* ⭐ DRAW SHAPE (polyline) — KROK 23: farba podľa linky */
+function drawShape(points, route) {
     if (!points) return;
 
     if (currentShapePolyline) {
@@ -101,9 +116,9 @@ function drawShape(points) {
     const latlngs = points.map(p => [p.lat, p.lon]);
 
     currentShapePolyline = L.polyline(latlngs, {
-        color: "#007bff",
+        color: getRouteColor(route),
         weight: 4,
-        opacity: 0.8
+        opacity: 0.85
     }).addTo(map);
 }
 
@@ -144,15 +159,17 @@ document.getElementById("start").addEventListener("click", () => {
                     icon: icons[v.event] || icons.UNKNOWN
                 }).addTo(map);
 
-                /* ⭐ KROK 21 + 22 — kliknutie na vozidlo → polyline + auto‑zoom */
+                /* ⭐ KROK 21 + 22 + 23 — polyline + auto‑zoom + farba */
                 marker.on("click", () => {
                     selectedVehicleId = v.vehicle_id;
                     updateInfoPanel(v);
 
-                    focusOnVehicle(v.lat, v.lon);   // ⭐ AUTO‑ZOOM
+                    focusOnVehicle(v.lat, v.lon);
 
                     if (v.shape_id) {
-                        loadShape(v.shape_id).then(drawShape);
+                        loadShape(v.shape_id).then(points => {
+                            drawShape(points, v.route);
+                        });
                     }
                 });
 
