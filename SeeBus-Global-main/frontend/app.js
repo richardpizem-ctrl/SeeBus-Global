@@ -25,6 +25,9 @@ let selectedVehicleId = null;
 /* ⭐ POLYLINE PRE TRASU */
 let currentShapePolyline = null;
 
+/* ⭐ ZASTÁVKY NA TRASE (KROK 25) */
+let currentStopMarkers = [];
+
 /* ⭐ FAREBNÉ TRASY PODĽA LINKY (KROK 23) */
 const routeColors = {
     "24": "#ff0000",
@@ -71,7 +74,7 @@ const icons = {
 
 /* ⭐ KROK 24 — ZVÝRAZNENÁ IKONKA PRE VYBRANÉ VOZIDLO */
 const selectedIcon = L.icon({
-    iconUrl: 'bus_blue.png',   // môžeš dať vlastnú ikonku
+    iconUrl: 'bus_blue.png',
     iconSize: [42, 42],
     iconAnchor: [21, 21]
 });
@@ -129,6 +132,41 @@ function drawShape(points, route) {
     }).addTo(map);
 }
 
+/* ⭐ KROK 25 — CLEAR STOPS */
+function clearStops() {
+    currentStopMarkers.forEach(m => map.removeLayer(m));
+    currentStopMarkers = [];
+}
+
+/* ⭐ KROK 25 — LOAD STOPS */
+async function loadStops(tripId) {
+    try {
+        const res = await fetch(`http://localhost:8000/stops/${tripId}`);
+        return await res.json();
+    } catch {
+        return [];
+    }
+}
+
+/* ⭐ KROK 25 — DRAW STOPS */
+function drawStops(stops) {
+    clearStops();
+
+    stops.forEach((s, index) => {
+        const marker = L.circleMarker([s.lat, s.lon], {
+            radius: 6,
+            color: index === 0 ? "#ffcc00" : "#333333",
+            fillColor: index === 0 ? "#ffcc00" : "#555555",
+            fillOpacity: 0.9,
+            weight: 2
+        }).addTo(map);
+
+        marker.bindPopup(`<b>${s.name}</b><br>Sequence: ${s.sequence}`);
+
+        currentStopMarkers.push(marker);
+    });
+}
+
 /* ⭐ STREAM — MULTI VEHICLE */
 document.getElementById("start").addEventListener("click", () => {
     const lang = langSelect.value;
@@ -166,14 +204,13 @@ document.getElementById("start").addEventListener("click", () => {
                     icon: icons[v.event] || icons.UNKNOWN
                 }).addTo(map);
 
-                /* ⭐ KROK 21 + 22 + 23 + 24 */
+                /* ⭐ KROK 21–25 */
                 marker.on("click", () => {
                     selectedVehicleId = v.vehicle_id;
                     updateInfoPanel(v);
 
                     focusOnVehicle(v.lat, v.lon);
 
-                    // ⭐ KROK 24 — zvýraznenie vybraného vozidla
                     Object.values(markers).forEach(m => m.setIcon(icons.IN_TRANSIT));
                     marker.setIcon(selectedIcon);
 
@@ -182,6 +219,8 @@ document.getElementById("start").addEventListener("click", () => {
                             drawShape(points, v.route);
                         });
                     }
+
+                    loadStops(v.trip_id).then(drawStops);
                 });
 
                 markers[v.vehicle_id] = marker;
@@ -190,7 +229,7 @@ document.getElementById("start").addEventListener("click", () => {
                 const marker = markers[v.vehicle_id];
 
                 if (selectedVehicleId === v.vehicle_id) {
-                    marker.setIcon(selectedIcon);   // ⭐ zvýraznený marker
+                    marker.setIcon(selectedIcon);
                 } else {
                     marker.setIcon(icons[v.event] || icons.UNKNOWN);
                 }
@@ -198,7 +237,6 @@ document.getElementById("start").addEventListener("click", () => {
                 smoothMove(marker, v.lat, v.lon);
             }
 
-            /* ⭐ Ak je toto vybrané vozidlo → aktualizuj info panel */
             if (selectedVehicleId === v.vehicle_id) {
                 updateInfoPanel(v);
             }
