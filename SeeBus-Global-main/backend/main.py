@@ -8,6 +8,9 @@ from backend.api.events_endpoint import router as events_router
 from backend.api.stream_endpoint import router as stream_router
 from backend.api.language_endpoint import router as language_router
 
+# ⭐ NOVÉ – stops endpoint
+from backend.api.stops_endpoint import router as stops_router
+
 # GTFS dáta
 from backend.gtfs.loader import stops, stop_times
 
@@ -30,3 +33,6 @@ def status():
 app.include_router(events_router)
 app.include_router(stream_router)
 app.include_router(language_router)
+
+# ⭐ NOVÉ – registrácia stops endpointu
+app.include_router(stops_router)
