@@ -74,6 +74,11 @@ function smoothMove(marker, newLat, newLon) {
     step();
 }
 
+/* ⭐ AUTO‑ZOOM NA VYBRANÉ VOZIDLO (KROK 22) */
+function focusOnVehicle(lat, lon) {
+    map.setView([lat, lon], 16, { animate: true });
+}
+
 /* ⭐ LOAD SHAPE (backend → frontend) */
 async function loadShape(shapeId) {
     if (!shapeId) return null;
@@ -139,10 +144,12 @@ document.getElementById("start").addEventListener("click", () => {
                     icon: icons[v.event] || icons.UNKNOWN
                 }).addTo(map);
 
-                /* ⭐ KROK 21 — kliknutie na vozidlo → polyline */
+                /* ⭐ KROK 21 + 22 — kliknutie na vozidlo → polyline + auto‑zoom */
                 marker.on("click", () => {
                     selectedVehicleId = v.vehicle_id;
                     updateInfoPanel(v);
+
+                    focusOnVehicle(v.lat, v.lon);   // ⭐ AUTO‑ZOOM
 
                     if (v.shape_id) {
                         loadShape(v.shape_id).then(drawShape);
