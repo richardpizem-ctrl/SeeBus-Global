@@ -1,43 +1,65 @@
 # 📘 SeeBus‑Global – Roadmap (2026)
 
-Kompletný plán vývoja projektu, rozdelený do logických etáp.  
-Roadmapa sa priebežne aktualizuje podľa stavu projektu.
+Aktuálny plán vývoja projektu podľa reálneho stavu backendu, frontendu a vydania verzie **v1.0.0**.
+
+Roadmapa sa priebežne aktualizuje podľa vývoja projektu.
 
 ---
 
 ## ✅ 1. Backend – Stabilizácia (HOTOVÉ)
 
-- Event Engine  
-- Event Dispatcher  
-- Logging  
-- `/api/events/process`  
-- `/api/events/stream`  
-- main.py integrácia  
-- testy stabilizované  
-- __init__.py doplnené  
-- GTFS loader  
-- GTFS‑RT loader  
-- TrackManager (16‑track routing pre autobusy)  
+- Event Engine (IN_TRANSIT / ARRIVING / AT_STOP / DEPARTING)
+- Event Dispatcher
+- Logging + Debug mód
+- `/api/events/process`
+- `/api/events/stream`
+- GTFS loader
+- GTFS‑RT loader
+- Shapes loader
+- Stops loader
+- TrackManager (16‑track routing)
+- Testy stabilizované
+- Celý backend v stave **Phase 4 – stabilizované**
 
 **Stav:** ✔ kompletne hotové
 
 ---
 
-## 🟡 2. Jazyková vrstva (PREBIEHA)
+## 🟢 2. Frontend – Real‑Time UI (HOTOVÉ)
 
-Cieľ: podpora všetkých 24 jazykov EÚ + angličtiny.
+### 2.1 Mapové jadro
+- Leaflet mapa
+- Real‑time pozície vozidiel
+- Smooth movement (requestAnimationFrame)
+- Smooth camera (flyTo)
+- Farebné trasy podľa linky
+- Zastávky na trase (highlight prvej)
+- Klikateľné vozidlá
 
-### 2.1 Backend
+### 2.2 UI komponenty
+- Info panel (vyleštený)
+- Message panel (farebné stavy + animácie)
+- Log panel (fade‑in + ikonky)
+- Jazykový prepínač (SK/EN)
+- CSS polishing (animácie, tieňovanie, hover efekty)
+
+**Stav:** ✔ hotové (v1.0.0)
+
+---
+
+## 🟡 3. Jazyková vrstva (PREBIEHA)
+
+### 3.1 Backend
 - parameter `lang` v API  
 - načítavanie jazykových súborov  
 - prepojenie s EventDispatcher  
 
-### 2.2 Jazykové súbory
-- vytvoriť `backend/locales/`  
-- 24 jazykov EÚ  
-- každý jazyk = 1 JSON súbor  
+### 3.2 Jazykové súbory
+- `backend/locales/`  
+- SK + EN hotové  
+- ďalšie jazyky: DE, PL, HU, CZ, AT, RO, HR, SI, IT, FR, ES, PT, NL, DK, FI, SE, NO, BG, GR, LT, LV, EE, MT  
 
-### 2.3 Prepojenie s hláseniami
+### 3.3 Hlásenia
 - textové hlásenia  
 - príprava na voice hlásenia  
 
@@ -45,50 +67,28 @@ Cieľ: podpora všetkých 24 jazykov EÚ + angličtiny.
 
 ---
 
-## 🔵 3. Frontend – Základné UI (ČAKÁ)
-
-### 3.1 Prepínač jazykov
-- SK / EN / DE / PL / HU / …  
-- uloženie do localStorage  
-- posielanie `lang` do API  
-
-### 3.2 Prepínač typu dopravy
-- MHD  
-- Prímestské  
-- Diaľkové  
-- Medzinárodné  
-
-### 3.3 SSE listener
-- EventSource  
-- real‑time eventy  
-- zobrazovanie hlásení  
-
-**Stav:** 🔵 čaká na jazykovú vrstvu
-
----
-
 ## 🔵 4. Datasety dopravy (ČAKÁ)
 
 ### 4.1 MHD
-- Banská Bystrica  
-- Bratislava  
-- Košice  
+- Banská Bystrica (hotové)
+- Bratislava
+- Košice
 
 ### 4.2 Prímestské
-- BBSK  
-- ŽSK  
-- TTSK  
+- BBSK
+- ŽSK
+- TTSK
 
 ### 4.3 Diaľkové
-- Slovak Lines  
-- FlixBus  
-- RegioJet  
+- Slovak Lines
+- FlixBus
+- RegioJet
 
 ### 4.4 Medzinárodné
-- EÚ → EÚ  
-- EÚ → mimo EÚ  
+- EÚ → EÚ
+- EÚ → mimo EÚ
 
-**Stav:** 🔵 čaká na UI prepínače
+**Stav:** 🔵 čaká na jazykovú vrstvu
 
 ---
 
@@ -98,7 +98,7 @@ Cieľ: podpora všetkých 24 jazykov EÚ + angličtiny.
 - testovanie eventov  
 - testovanie SSE streamu  
 
-**Stav:** 🔵 čaká na jazykovú vrstvu
+**Stav:** 🔵 čaká na datasety
 
 ---
 
@@ -112,22 +112,68 @@ Cieľ: podpora všetkých 24 jazykov EÚ + angličtiny.
 - ARCHITECTURE.md  
 - MODULE MAP  
 
-**Stav:** 🔵 čaká na finalizáciu backendu
+**Stav:** 🔵 čaká na stabilizáciu jazykovej vrstvy
 
 ---
 
-## 🔵 7. Release v1.0.0 (ČAKÁ)
+## 🟢 7. Release v1.0.0 (HOTOVÉ)
 
 - GitHub test  
 - finálne úpravy  
+- polished frontend  
+- polished backend  
 - prvý verejný release  
-- čakáme na prvú organickú ⭐  
 
-**Stav:** 🔵 čaká na body 2–6
+**Stav:** ✔ hotové
 
 ---
 
-## ⭐ Záver
+## 🔵 8. Release v1.1.0 (PRIPRAVUJE SA)
 
-Táto roadmapa definuje jasný smer projektu a poradie krokov.  
-Aktuálny fokus: **jazyková vrstva (24 jazykov EÚ + EN)**.
+- rozšírená jazyková vrstva  
+- nové datasety  
+- UI prepínač typov dopravy  
+- optimalizácie výkonu  
+- príprava na mobilnú verziu  
+
+**Stav:** 🔵 čaká na body 3–4
+
+---
+
+# ⭐ Vízia projektu
+
+SeeBus‑Global smeruje k tomu, aby sa stal:
+
+### 🚍 **Najrýchlejším open‑source real‑time dopravným systémom v EÚ**
+- okamžité eventy  
+- nízka latencia  
+- čistá architektúra  
+
+### 🌍 **Multijazyčná platforma pre všetky krajiny EÚ**
+- 24 jazykov  
+- jednotné hlásenia  
+- pripravené na voice engine  
+
+### 📡 **Univerzálny dopravný engine**
+- MHD  
+- prímestské  
+- diaľkové  
+- medzinárodné  
+
+### 📱 **Budúca mobilná verzia**
+- vibrácie  
+- navigácia  
+- offline režim  
+
+### 🧩 **Modulárny systém**
+- backend moduly  
+- frontend moduly  
+- dataset moduly  
+
+---
+
+# ⭐ Záver
+
+Aktuálny fokus: **jazyková vrstva + datasety**  
+Projekt je po vydaní **v1.0.0** v stave pripravenom na rýchlu expanziu.
+
